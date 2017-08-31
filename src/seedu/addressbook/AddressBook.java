@@ -78,7 +78,8 @@ public class AddressBook {
     private static final String MESSAGE_INVALID_FILE = "The given file name [%1$s] is not a valid file name!";
     private static final String MESSAGE_INVALID_PROGRAM_ARGS = "Too many parameters! Correct program argument format:"
                                                             + LS + "\tjava AddressBook"
-                                                            + LS + "\tjava AddressBook [custom storage file path]";
+                                                            + LS + "\tjava AddressBook [custom storage file path]"
+                                                            + LS + "re-enter name of file to store addresses, ending with '0', or press 'Ctrl+c' to terminate program: ";
     private static final String MESSAGE_INVALID_PERSON_DISPLAYED_INDEX = "The person index provided is invalid";
     private static final String MESSAGE_INVALID_STORAGE_FILE_CONTENT = "Storage file has invalid content";
     private static final String MESSAGE_PERSON_NOT_IN_ADDRESSBOOK = "Person could not be found in address book";
@@ -90,6 +91,7 @@ public class AddressBook {
     private static final String MESSAGE_STORAGE_FILE_CREATED = "Created new empty storage file: %1$s";
     private static final String MESSAGE_WELCOME = "Welcome to your Address Book!";
     private static final String MESSAGE_USING_DEFAULT_FILE = "Using default storage file : " + DEFAULT_STORAGE_FILEPATH;
+    private static final String MESSAGE_USING_EXISTING_FILE = "Using existing storage file : %1$s";
 
     // These are the prefix strings to define the data type of a command parameter
     private static final String PERSON_DATA_PREFIX_PHONE = "p/";
@@ -193,6 +195,7 @@ public class AddressBook {
     /**
      * The path to the file used for storing person data.
      */
+
     private static String storageFilePath;
 
     /*
@@ -248,6 +251,9 @@ public class AddressBook {
     private static void echoUserCommand(String userCommand) {
         showToUser("[Command entered:" + userCommand + "]");
     }
+    private static void echoUserInput(String userInput) {
+        showToUser("[You typed:" + userInput + "]");
+    }
 
     /**
      * Processes the program main method run arguments.
@@ -257,16 +263,37 @@ public class AddressBook {
      * @param args full program arguments passed to application main method
      */
     private static void processProgramArgs(String[] args) {
-        if (args.length >= 2) {
+        /* allows for multiple entries of ProgramArgs without exiting program.
+         */
+
+        //import strings in args into a new ArrayList of arguments
+        ArrayList<String> arguments= new ArrayList<String> ();
+        for(int i=0; i<args.length; i++) {
+            arguments.add(args[i]);
+        }
+
+        //if ArrayList has 2 or more items, clear the arraylist and re-enter.
+        while (arguments.size() >= 2) {
+            //System.out.println(arguments.size());
             showToUser(MESSAGE_INVALID_PROGRAM_ARGS);
-            exitProgram();
+            arguments.clear();
+
+            System.out.print(LINE_PREFIX);
+            String tok = SCANNER.next();
+            while(!tok.equals("0")) {
+                arguments.add(tok);
+                echoUserInput(tok);
+                System.out.print(LINE_PREFIX);
+                tok= SCANNER.next();
+            }
+            //exitProgram();
         }
 
-        if (args.length == 1) {
-            setupGivenFileForStorage(args[0]);
+        if (arguments.size() == 1) {
+            setupGivenFileForStorage(arguments.get(0));
         }
 
-        if(args.length == 0) {
+        if(arguments.size() == 0) {
             setupDefaultFileForStorage();
         }
     }
@@ -280,7 +307,8 @@ public class AddressBook {
 
         if (!isValidFilePath(filePath)) {
             showToUser(String.format(MESSAGE_INVALID_FILE, filePath));
-            exitProgram();
+            setupDefaultFileForStorage();
+            return;
         }
 
         storageFilePath = filePath;
@@ -301,12 +329,12 @@ public class AddressBook {
      * Exits program if the file cannot be created.
      */
     private static void setupDefaultFileForStorage() {
-        showToUser(MESSAGE_USING_DEFAULT_FILE);
-        storageFilePath = DEFAULT_STORAGE_FILEPATH;
-        createFileIfMissing(storageFilePath);
-    }
+     showToUser(MESSAGE_USING_DEFAULT_FILE);
+     storageFilePath = DEFAULT_STORAGE_FILEPATH;
+     createFileIfMissing(storageFilePath);
+     }
 
-    /**
+     /**
      * Returns true if the given file path is valid.
      * A file path is valid if it has a valid parent directory as determined by {@link #hasValidParentDirectory}
      * and a valid file name as determined by {@link #hasValidFileName}.
@@ -329,6 +357,7 @@ public class AddressBook {
      */
     private static boolean hasValidParentDirectory(Path filePath) {
         Path parentDirectory = filePath.getParent();
+        //if(parentDirectory==null) System.out.println("null parent directory");
         return parentDirectory == null || Files.isDirectory(parentDirectory);
     }
 
@@ -707,6 +736,7 @@ public class AddressBook {
     private static void createFileIfMissing(String filePath) {
         final File storageFile = new File(filePath);
         if (storageFile.exists()) {
+            showToUser(String.format(MESSAGE_USING_EXISTING_FILE, filePath));
             return;
         }
 
